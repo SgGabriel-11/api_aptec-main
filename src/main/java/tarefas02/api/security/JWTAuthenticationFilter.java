@@ -7,7 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import  org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -18,46 +18,45 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import tarefas02.api.models.User;
 
+public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-public class JWTAuthenticationFilter  extends UsernamePasswordAuthenticationFilter{
     private final AuthenticationManager authenticationManager;
     private final JWTUtil jwtUtil;
 
-    public JWTAuthenticationFilter (AuthenticationManager authenticationManager,JWTUtil jwtUtil){
+    public JWTAuthenticationFilter(AuthenticationManager authenticationManager, JWTUtil jwtUtil) {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         setFilterProcessesUrl("/login");
     }
 
-    @Override 
-        public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-        throws AuthenticationException{
-            try{
-                User user = new ObjectMapper().readValue(request.getInputStream(), User.class);
-                 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+            throws AuthenticationException {
+        try {
+            User user = new ObjectMapper().readValue(request.getInputStream(), User.class);
+
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     user.getUsername(),
                     user.getPassword(),
                     new ArrayList<>()
-                );
-                return this.authenticationManager.authenticate(authToken);
-            } catch (IOException e){
-                throw new RuntimeException("Erro ao processar as credencias de autenticação",e);
-            }
+            );
+            return this.authenticationManager.authenticate(authToken);
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao processar as credenciais de autenticação", e);
         }
+    }
 
-        @Override 
-        protected  void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
-            FilterChain filterChain, Authentication authResul) throws IOException, ServletException{
-                
-                UserSpringSecurity userSS = (UserSpringSecurity) authResul.getPrincipal();
-                String token = this.jwtUtil.generateToken(userSS.getUsername());
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain, Authentication authResult) throws IOException, ServletException {
 
-                response.addHeader("Autorization", "Bearer"+ token);
-                response.addHeader("access-control-expos-headers","Authorization");
+        UserSpringSecurity userSS = (UserSpringSecurity) authResult.getPrincipal();
+        String token = this.jwtUtil.generateToken(userSS.getUsername());
 
-            }
-          
+        // Corrigido "Authorization" (com 'h') e adicionado o espaço em "Bearer "
+        response.addHeader("Authorization", "Bearer " + token);
+
+        // Corrigido "Access-Control-Expose-Headers" (com 'e' em Expose)
+        response.addHeader("Access-Control-Expose-Headers", "Authorization");
+    }
 }
-            
-
